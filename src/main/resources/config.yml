@@ -1,0 +1,11 @@
+DATABASE:
+  #Use MONGO or MYSQL
+  TYPE: MYSQL
+
+INVEST_COMMAND:
+  TIMER: 5
+  SERVER_NAME: 'invest'
+
+MESSAGES:
+  SUCCESSFULY_TAKE_MONEY: '&7Vous venez de recevoir %money% de votre dernier investissement !'
+  TELEPORT_TO_INVEST: '&7Vous allez être téléporté au serveur investissement dans %time% secondes !'
