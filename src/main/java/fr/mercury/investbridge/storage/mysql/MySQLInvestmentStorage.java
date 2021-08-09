@@ -1,10 +1,9 @@
 package fr.mercury.investbridge.storage.mysql;
 
 import fr.mercury.investbridge.MercuryInvestBridge;
-import fr.mercury.investbridge.database.sql.ConfigDatabaseManager;
-import fr.mercury.investbridge.database.sql.Database;
-import fr.mercury.investbridge.storage.InvestUser;
+import fr.mercury.investbridge.database.MySQLDatabase;
 import fr.mercury.investbridge.storage.InvestmentStorage;
+import fr.mercury.investbridge.storage.UserInvestment;
 import fr.mercury.investbridge.utils.Utils;
 import fr.mercury.investbridge.utils.VaultUtils;
 import org.bukkit.Bukkit;
@@ -20,13 +19,17 @@ import java.util.Optional;
  @Author Anto' | SwartZ#0001
  @create 22/07/2021
  */
-public class MySQLInvestmentStorage implements InvestmentStorage {
+public class MySQLInvestmentStorage extends InvestmentStorage<MySQLDatabase> {
 
-    private final Database database = ConfigDatabaseManager.getInstance().getWebsiteDatabase();
     private final FileConfiguration config = MercuryInvestBridge.getInstance().getConfiguration();
 
+    public MySQLInvestmentStorage(MySQLDatabase database) {
+        super(database);
+    }
+
     @Override
-    public Optional<InvestUser> getUser(String username) {
+    public Optional<UserInvestment> getUser(String username) {
+
         ResultSet query = database.query("SELECT * FROM investment WHERE username = '" + username + "';");
 
         try {
@@ -35,6 +38,7 @@ public class MySQLInvestmentStorage implements InvestmentStorage {
                 long timeStayed = query.getLong("seconds");
                 BigDecimal money = query.getBigDecimal("money");
 
+                return Optional.of(new UserInvestment(username, money, investmentId, timeStayed));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -44,11 +48,20 @@ public class MySQLInvestmentStorage implements InvestmentStorage {
     }
 
     @Override
-    public boolean hasAccount(String name) { return database.query("SELECT * FROM investment WHERE username = '" + name + "';") != null; }
+    public void save(UserInvestment user) {
+
+        this.database.execute(
+                "REPLACE INTO investment (username, investment, seconds, money) VALUES " +
+                        "('" + user.getUsername() + "'," +
+                        user.getInvestment() + ',' +
+                        user.getSeconds() + ',' +
+                        VaultUtils.getBalance(user.getUsername()) + ")"
+        );
+    }
 
     @Override
-    public void save(InvestUser user) {
-
+    public boolean hasAccount(String name) {
+        return this.database.query("SELECT * FROM investment WHERE username = '" + name + "';") != null;
     }
 
     @Override

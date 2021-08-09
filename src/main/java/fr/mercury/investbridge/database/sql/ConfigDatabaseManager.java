@@ -2,11 +2,17 @@ package fr.mercury.investbridge.database.sql;
 
 import com.google.common.reflect.TypeToken;
 import fr.mercury.investbridge.MercuryInvestBridge;
+import fr.mercury.investbridge.database.AbstractDatabase;
+import fr.mercury.investbridge.database.DatabaseType;
+import fr.mercury.investbridge.database.MySQLDatabase;
+import fr.mercury.investbridge.storage.InvestmentStorage;
+import fr.mercury.investbridge.storage.StorageUtils;
 import fr.mercury.investbridge.utils.Utils;
 import fr.mercury.investbridge.utils.jsons.DiscUtil;
 import fr.mercury.investbridge.utils.jsons.Saveable;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 
@@ -20,7 +26,11 @@ public class ConfigDatabaseManager extends Saveable {
     private static @Getter
     ConfigDatabaseManager instance;
     private ConfigDatabase config;
+    private AbstractDatabase database;
     private Database websiteDatabase;
+    private FileConfiguration configYml = MercuryInvestBridge.getInstance().getConfiguration();
+    private @Getter
+    InvestmentStorage storage;
 
     public ConfigDatabaseManager(MercuryInvestBridge plugin) {
         super(plugin, "Config");
@@ -39,13 +49,13 @@ public class ConfigDatabaseManager extends Saveable {
      */
     public void connectDatabases() {
         ConfigDatabase config = this.getConfig();
-        this.websiteDatabase = new Database(config.getWebsiteCredentials());
+        this.database = StorageUtils.getDatabaseByName(DatabaseType.valueOf(this.configYml.getString("DATABASE.TYPE")), config.getWebsiteCredentials());
     }
 
     public void createTable() {
-        if (this.websiteDatabase.isConnected()) {
-            this.websiteDatabase.createTable("investment", new String[] { "username VARCHAR(256)", "investment varchar(255)", "timeStayed int(11)", "PRIMARY KEY (username)" });
-        }
+        MySQLDatabase mySqlDatabase = (MySQLDatabase) this.database;
+        mySqlDatabase.createTable("investment", new String[]{"username VARCHAR(256)", "investment varchar(255)", "seconds bigint(25)", "money DECIMAL(10,5)", "PRIMARY KEY (username)"});
+
     }
 
     @Override
@@ -65,8 +75,8 @@ public class ConfigDatabaseManager extends Saveable {
                 exception.printStackTrace();
             }
         }
-            this.connectDatabases();
-            this.createTable();
+        this.connectDatabases();
+        this.createTable();
     }
 
     @Override

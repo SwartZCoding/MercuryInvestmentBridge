@@ -1,5 +1,9 @@
 package fr.mercury.investbridge.storage;
 
+import fr.mercury.investbridge.database.AbstractDatabase;
+import fr.mercury.investbridge.utils.VaultUtils;
+import org.bukkit.entity.Player;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -8,15 +12,27 @@ import java.util.Optional;
  @create 22/07/2021
  */
 
-public interface InvestmentStorage {
+public abstract class InvestmentStorage<T extends AbstractDatabase> {
 
-    Optional<InvestUser> getUser(String username);
+    protected T database;
 
-    boolean hasAccount(String name);
+    public InvestmentStorage(T database) {
+        this.database = database;
+    }
 
-    void save(InvestUser user);
+    public UserInvestment createUser(String username) {
+        return new UserInvestment(username, BigDecimal.valueOf(VaultUtils.getBalance(username)), -1, 0);
+    }
 
-    Optional<BigDecimal> getMoney(String username);
+    public boolean hasAccount(String name) {
+        return this.getUser(name).isPresent();
+    }
 
-    void addMoney(String username);
+    public abstract Optional<UserInvestment> getUser(String username);
+
+    public abstract void save(UserInvestment user);
+
+    public abstract Optional<BigDecimal> getMoney(String username);
+
+    public abstract void addMoney(String username);
 }
